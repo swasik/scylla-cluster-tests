@@ -4280,7 +4280,7 @@ class Nemesis:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                 new_nodes += self.add_new_nodes(count=1, rack=rack_idx,
                                                 instance_type=self.tester.params.get('nemesis_grow_shrink_instance_type'))
                 if duration := self.tester.params.get('nemesis_double_load_during_grow_shrink_duration'):
-                    self._double_cluster_load(duration, stress_num)
+                    self._double_cluster_load(duration, idx)
         self.log.info("Finish cluster grow")
         time.sleep(self.interval)
         return new_nodes
