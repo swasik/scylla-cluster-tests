@@ -4249,8 +4249,8 @@ class Nemesis:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         # pass on the exact nodes only if we have specific types for them
         new_nodes = new_nodes if self.tester.params.get('nemesis_grow_shrink_instance_type') else None
-        #if duration := self.tester.params.get('nemesis_double_load_during_grow_shrink_duration'):
-        #    self._increase_cluster_load(duration)
+        if duration := self.tester.params.get('nemesis_double_load_during_grow_shrink_duration'):
+            self._increase_cluster_load(duration)
         self._shrink_cluster(rack=None, new_nodes=new_nodes)
 
     # NOTE: version limitation is caused by the following:
@@ -4279,8 +4279,6 @@ class Nemesis:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                 rack_idx = rack if rack is not None else idx % self.cluster.racks_count
                 new_nodes += self.add_new_nodes(count=1, rack=rack_idx,
                                                 instance_type=self.tester.params.get('nemesis_grow_shrink_instance_type'))
-                if duration := self.tester.params.get('nemesis_double_load_during_grow_shrink_duration'):
-                    self._increase_cluster_load(duration)
                 if idx == 0:
                     self.log.info("Started: refill data to 90")
                     refill_90_percent = self.tester.params.get('stress_cmd_w')
