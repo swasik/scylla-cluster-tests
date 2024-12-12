@@ -4236,19 +4236,21 @@ class Nemesis:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                 self.decommission_nodes(nodes_to_decommission)
             else:
                 for node in nodes_to_decommission:
+                    if duration := self.tester.params.get('nemesis_double_load_during_grow_shrink_duration'):
+                        self._increase_cluster_load(duration)
                     self.decommission_nodes([node])
         except Exception as exc:  # pylint: disable=broad-except  # noqa: BLE001
             InfoEvent(f'FinishEvent - ShrinkCluster failed decommissioning a node {self.target_node} with error '
                       f'{str(exc)}').publish()
 
     @latency_calculator_decorator(legend="Doubling cluster load")
-    def _double_cluster_load(self, duration: int) -> None:
+    def _increase_cluster_load(self, duration: int) -> None:
         duration = 30
-        self.log.info("Doubling the load on the cluster for %s minutes", duration)
+        self.log.info("Increasing the load on the cluster for %s minutes", duration)
         stress_queue = self.tester.run_stress_thread(
             stress_cmd=self.tester.stress_cmd, stress_num=1, stats_aggregate_cmds=False, duration=duration)
         results = self.tester.get_stress_results(queue=stress_queue, store_results=False)
-        self.log.info(f"Double load results: {results}")
+        self.log.info(f"Increased load results: {results}")
 
     @target_data_nodes
     def disrupt_grow_shrink_cluster(self):
@@ -4261,7 +4263,7 @@ class Nemesis:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         # pass on the exact nodes only if we have specific types for them
         new_nodes = new_nodes if self.tester.params.get('nemesis_grow_shrink_instance_type') else None
         if duration := self.tester.params.get('nemesis_double_load_during_grow_shrink_duration'):
-            self._double_cluster_load(duration)
+            self._increase_cluster_load(duration)
         self._shrink_cluster(rack=None, new_nodes=new_nodes)
 
     # NOTE: version limitation is caused by the following:
@@ -4290,12 +4292,19 @@ class Nemesis:  # pylint: disable=too-many-instance-attributes,too-many-public-m
                 rack_idx = rack if rack is not None else idx % self.cluster.racks_count
                 new_nodes += self.add_new_nodes(count=1, rack=rack_idx,
                                                 instance_type=self.tester.params.get('nemesis_grow_shrink_instance_type'))
+                if idx == 0:
+                    self.log.info("Started: refill data to 90")
+                    refill_90_percent = self.tester.params.get('stress_cmd_w')
+                    stress_queue = self.tester.run_stress_thread(stress_cmd=refill_90_percent, stress_num=1, stats_aggregate_cmds=False)
+                    results = self.tester.get_stress_results(queue=stress_queue, store_results=False)
+                    self.log.info("Completed: refill data to 90")
         self.log.info("Finish cluster grow")
         time.sleep(self.interval)
         return new_nodes
 
     def _shrink_cluster(self, rack=None, new_nodes: list[BaseNode] | None = None):
-        add_nodes_number = self.tester.params.get('nemesis_add_node_cnt')
+        #add_nodes_number = self.tester.params.get('nemesis_add_node_cnt')
+        add_nodes_number = 1
         InfoEvent(message=f'Start shrink cluster by {add_nodes_number} nodes').publish()
         # Check that number of nodes is enough for decommission:
         self.log.debug("Current target_node %s, is zero_node: %s, dc_idx: %s", self.target_node.name,
