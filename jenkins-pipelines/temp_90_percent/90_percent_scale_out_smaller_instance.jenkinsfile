@@ -4,13 +4,14 @@
 def lib = library identifier: 'sct@snapshot', retriever: legacySCM(scm)
 
 perfRegressionParallelPipeline(
-    backend: "aws",
-    availability_zone: 'a',
+    backend: "gce",
+    region: "us-east1",
+    availability_zone: "a",
     test_name: "performance_regression_test.PerformanceRegressionTest",
-    test_config: """["test-cases/temp_90_percent/90-percent-perf-i4i-4xlarge-grow-i4i-large.yaml", "configurations/disable_kms.yaml"]""",
+    test_config: """["test-cases/temp_90_percent/90-percent-perf-n2-highmem-16-grow-n2-highmem-2.yaml", "configurations/disable_kms.yaml"]""",
     sub_tests: ["test_latency_mixed_with_nemesis"],
     scylla_version: 'enterprise:latest',
-    email_recipients: 'cezar.moise@scylladb.com',
+    email_recipients: 'szymon.wasik@scylladb.com',
     post_behavior_db_nodes: 'destroy',
     post_behavior_loader_nodes: 'destroy',
     post_behavior_monitor_nodes: 'destroy',
